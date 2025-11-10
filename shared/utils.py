@@ -152,15 +152,16 @@ Always provide comprehensive answers that take into account the full set of revi
     return assistant
 
 
-def convert_csv_to_json(csv_path: str, json_path: str = None) -> str:
-    """Convert a CSV file to JSON format.
+def convert_csv_to_json(csv_path: str, json_path: str = None, max_size_mb: float = 350.0) -> list[str]:
+    """Convert a CSV file to JSON format, splitting into multiple files if needed.
     
     Args:
         csv_path: Path to the CSV file
-        json_path: Path for the output JSON file (defaults to same directory with .json extension)
+        json_path: Path template for output JSON files (defaults to same directory with .json extension). If file is split, parts will be named: filename_part1.json, filename_part2.json, etc.
+        max_size_mb: Maximum size in MB for each JSON file (default: 350.0)
         
     Returns:
-        Path to the created JSON file
+        List of paths to created JSON files
     """
     csv_file = Path(csv_path)
     if not csv_file.exists():
@@ -172,7 +173,7 @@ def convert_csv_to_json(csv_path: str, json_path: str = None) -> str:
     else:
         json_path = Path(json_path)
     
-    # Load CSV and convert to JSON
+    # Load CSV
     df = pd.read_csv(csv_path, low_memory=False)
     
     # Convert to records format (list of dictionaries)
@@ -191,26 +192,61 @@ def convert_csv_to_json(csv_path: str, json_path: str = None) -> str:
     
     records = [clean_record(r) for r in records]
     
-    # Write JSON file (compact format, no indentation for large files)
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(records, f, ensure_ascii=False)
+    # Estimate size per record by converting a sample
+    max_size_bytes = max_size_mb * 1024 * 1024
+    if len(records) > 0:
+        # Sample first record to estimate size
+        sample_json = json.dumps([records[0]], ensure_ascii=False)
+        sample_size = len(sample_json.encode('utf-8'))
+        # Use 90% of max size to leave margin for JSON overhead
+        records_per_file = max(1, int((max_size_bytes * 0.9) / sample_size))
+    else:
+        records_per_file = len(records)
     
-    print(f"Converted {len(records)} rows from {csv_file.name} to {json_path.name}")
+    json_files = []
+    total_records = len(records)
     
-    return str(json_path)
+    # Split records into chunks and write JSON files
+    if total_records <= records_per_file:
+        # Single file - no splitting needed
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(records, f, ensure_ascii=False)
+        json_files.append(str(json_path))
+        print(f"Converted {total_records} rows from {csv_file.name} to {json_path.name}")
+    else:
+        # Split into multiple files
+        num_parts = (total_records + records_per_file - 1) // records_per_file
+        base_name = json_path.stem
+        base_dir = json_path.parent
+        
+        for part_num in range(num_parts):
+            start_idx = part_num * records_per_file
+            end_idx = min(start_idx + records_per_file, total_records)
+            chunk_records = records[start_idx:end_idx]
+            
+            # Create filename: original_name_part1.json, original_name_part2.json, etc.
+            part_filename = base_dir / f"{base_name}_part{part_num + 1}.json"
+            
+            with open(part_filename, 'w', encoding='utf-8') as f:
+                json.dump(chunk_records, f, ensure_ascii=False)
+            
+            json_files.append(str(part_filename))
+            print(f"Converted {len(chunk_records)} rows (part {part_num + 1}/{num_parts}) from {csv_file.name} to {part_filename.name}")
+    
+    return json_files
 
 
-def convert_steam_datasets_to_json() -> tuple[str, str]:
-    """Convert both Steam dataset CSV files to JSON format.
+def convert_steam_datasets_to_json() -> tuple[list[str], list[str]]:
+    """Convert both Steam dataset CSV files to JSON format, splitting if needed.
     
     Returns:
-        tuple: (applications_json_path, reviews_json_path)
+        tuple: (list of applications_json_paths, list of reviews_json_paths)
     """
     project_root = Path(__file__).parent.parent
     applications_csv = project_root / "data" / "steam_dataset_2025_csv" / "applications.csv"
     reviews_csv = project_root / "data" / "steam_dataset_2025_csv" / "reviews.csv"
     
-    applications_json = convert_csv_to_json(str(applications_csv))
-    reviews_json = convert_csv_to_json(str(reviews_csv))
+    applications_json_files = convert_csv_to_json(str(applications_csv))
+    reviews_json_files = convert_csv_to_json(str(reviews_csv))
     
-    return applications_json, reviews_json
+    return applications_json_files, reviews_json_files

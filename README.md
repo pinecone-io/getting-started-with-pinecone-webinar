@@ -101,15 +101,17 @@ python pc-webinar.py assistant-load
 
 This command will:
 - Convert the Steam dataset CSV files (applications.csv and reviews.csv) to JSON format and save them in the same directory as the CSV files
+- Automatically split large JSON files into 350MB chunks if needed (files are named `applications_part1.json`, `reviews_part1.json`, etc. when split)
 - Get or create the Pinecone Assistant (if it doesn't exist)
-- Upload the JSON files to the assistant for use in chat completions
+- Upload all JSON files (including split parts) to the assistant for use in chat completions
 
-**Note:** The CSV files are automatically converted to JSON format before upload, as the Pinecone Assistant doesn't accept CSV files but does accept JSON files.
+**Note:** The CSV files are automatically converted to JSON format before upload, as the Pinecone Assistant doesn't accept CSV files but does accept JSON files. Large files (over 500MB) are automatically split into multiple smaller JSON files to ensure successful uploads.
 
 **Note:** This data load will take several hours:
-  * They are big files
+  * They are big files (reviews.csv has over 1 million records)
+  * Large files are automatically split into 500MB chunks to avoid upload size limits
   * The upload automatically creates dense and sparse indexes and uses hybrid search (none of this is visible to the user)
-  * Progress bars will only show if a file has been uploaded or not, progress isn't real-time
+  * Progress bars will show file-level progress for each JSON file being uploaded
 
 #### Prompting the Assistant
 Chat with the Pinecone Assistant using the uploaded Steam game data:
@@ -119,7 +121,7 @@ Chat with the Pinecone Assistant using the uploaded Steam game data:
 python pc-webinar.py assistant-prompt "What are the most popular Steam games?"
 
 # Specify a different model using short flag
-python pc-webinar.py assistant-prompt "Tell me about Counter-Strike" -m claude-3-5-sonnet
+python pc-webinar.py assistant-prompt "Tell me about Counter-Strike's review sentiment" -m claude-3-5-sonnet
 
 # Using the full --model flag
 python pc-webinar.py assistant-prompt "What games have the best reviews?" --model gemini-2.5-pro
