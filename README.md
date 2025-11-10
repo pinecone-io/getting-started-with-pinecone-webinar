@@ -6,6 +6,19 @@ Repository with example code and data used in the monthly Getting Started with P
   * Pinecone account ([Sign up here](https://app.pinecone.io/?sessionType=signup))
     * Create a project and copy your API key
 
+### Using Pre-Loaded Environments (Optional)
+**Want to try it out without setting up your own environment?**
+
+You can use the shared API key provided in `example.env` to access the pre-loaded database indexes and assistant:
+- **API Key**: `pcsk_2go2xm_EAXpMTvVHud6PP3od6iCB5NsCY3PC9smXUQktmh2eVaoDbAhCjqp7Fw5Yqitjqr`
+- This API key provides read-only access to:
+  - Both database indexes (`getting-started-webinar-dense` and `getting-started-webinar-sparse`) with pre-loaded Steam game data
+  - The Pinecone Assistant (`getting-started-webinar-assistant`) with uploaded Steam game data
+
+**Web Interface:** You can also chat with the assistant directly in your browser at [https://getting-started-with-pinecone-webinar.vercel.app/](https://getting-started-with-pinecone-webinar.vercel.app/)
+
+Copy the API key from `example.env` into your `.env` file and you can start querying the database or chatting with the assistant immediately, without running the data load commands.
+
 ## Walkthrough
 
 ### Getting your environment ready
