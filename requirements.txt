@@ -1,0 +1,5 @@
+pandas>=2.3.3
+tiktoken>=0.12.0
+python-dotenv>=1.2.1
+pinecone>=7.3.0
+tqdm>=4.67.1
