@@ -5,7 +5,7 @@ import pinecone
 from shared import utils
 
 
-def merge_hits(h1, h2):
+def merge_hits(h1: list, h2: list) -> list:
     """Get the unique hits from two search results and return them as single list"""
     # Deduplicate by _id
     deduped_hits = {hit['_id']: hit for hit in h1 + h2}.values()
@@ -127,7 +127,7 @@ def hybrid_search(query_text: str, dense_index: pinecone.Pinecone.Index, sparse_
     return reranked_results
 
 
-def format_results(results):
+def format_results(results: list) -> str:
     """
     Format search results for display.
     

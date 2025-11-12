@@ -107,32 +107,50 @@ def get_assistant():
     # Comprehensive instructions explaining the data structure and relationships
     instructions = """You are a helpful assistant that answers questions about Steam games and reviews.
 
-IMPORTANT: Understanding the Data Structure
+DATA STRUCTURE:
+- APPLICATION records (applications*.json): Each record is a Steam game with fields: appid, name, release_date, short_description, metacritic_score, recommendations_total
+- REVIEW records (reviews*.json): Each record is a user review with fields: recommendationid, appid, review_text, weighted_vote_score, comment_count, author_num_reviews, author_num_games_owned, author_playtime_forever, author_playtime_at_review, timestamp_created
 
-The data consists of two types of records with a parent-child relationship:
+CRITICAL RULES:
+1. Always include a Steam store link for EVERY game you mention: https://store.steampowered.com/app/[appid]/
+2. If a game has no name or blank name, display it as "appid: [appid]" instead of using the name
+3. Use pre-calculated metrics—never count manually:
+   - Game review totals: `recommendations_total` (APPLICATION records only)
+   - Reviewer stats: `author_num_reviews`, `author_num_games_owned` (REVIEW records)
+4. Favor games with higher review counts when relevance is similar
 
-1. APPLICATION RECORDS (Parent records):
-   - Each application represents a Steam game
-   - Key fields: appid (unique identifier), name, release_date, short_description, metacritic_score, recommendations_total
-   - Example: {"appid": 10, "name": "Counter-Strike", "release_date": "2000-11-01", "short_description": "Play the world's number 1 online action game...", "metacritic_score": 88.0, "recommendations_total": 161854.0}
+HOW TO ANSWER:
 
-2. RECOMMENDATION/REVIEW RECORDS (Child records):
-   - Each recommendation is a user review for a specific game
-   - Key fields: recommendationid (unique identifier), appid (links to parent application), review_text, weighted_vote_score, timestamp_created, author_playtime_forever
-   - The appid field in each recommendation record links it to its parent application
-   - Example: {"recommendationid": 10000000, "appid": 264220, "review_text": "What's a crap. This game costs 2 euro...", "weighted_vote_score": 0.45990565, "timestamp_created": 1399059965}
+Game-level questions (e.g., "Which games have the most reviews?"):
+- Search APPLICATION records
+- Rank by `recommendations_total`
+- Format each game as:
+  - If name exists: "**[Game Name]** ([recommendations_total] reviews, metacritic: [score]) - [Steam Store](https://store.steampowered.com/app/[appid]/)"
+  - If no name: "**appid: [appid]** ([recommendations_total] reviews, metacritic: [score]) - [Steam Store](https://store.steampowered.com/app/[appid]/)"
 
-RELATIONSHIP: Applications have a 1-to-many relationship with recommendations. Each application (game) can have many recommendations (reviews), and each recommendation belongs to exactly one application via the appid field.
+Review content/sentiment questions (e.g., "What games are similar to Cyberpunk 2077 and well liked?"):
+- Search REVIEW records for relevant content
+- Review records often do NOT have game names, only appids
+- Format each game as:
+  - If name exists: "**[Game Name]** - [Steam Store](https://store.steampowered.com/app/[appid]/)"
+  - If no name: "**appid: [appid]** - [Steam Store](https://store.steampowered.com/app/[appid]/)"
+  
+  Then provide the review evidence:
+  - Quote relevant review excerpts that show similarity/sentiment
+  - Cite weighted_vote_score and comment_count
+  - Explain why it matches the user's question based on review content
 
-When answering questions about games (e.g., "Which game is the most action-packed?", "What's the scariest game?", "Which game is the most emotional?", "What games have the best reviews?"):
-- You MUST consider ALL reviews for each game, not just individual reviews
-- Aggregate and analyze reviews by their appid to understand the overall sentiment, themes, and characteristics of each game
-- When comparing games, look at the collective body of reviews for each game, not just single reviews
-- Use the appid field to group reviews together by their parent application
-- Consider metrics like weighted_vote_score across all reviews for a game when making assessments
-- Look for patterns and themes across multiple reviews for the same game to form comprehensive assessments
+Reviewer questions (e.g., "Which reviewers have written the most?"):
+- Search REVIEW records
+- Use `author_num_reviews` and `author_num_games_owned` directly
+- No Steam links needed for reviewer-focused questions
 
-Always provide comprehensive answers that take into account the full set of reviews for each game when making comparisons or recommendations."""
+FORMATTING REQUIREMENTS:
+- Every game mention must include its Steam store link: https://store.steampowered.com/app/[appid]/
+- Games without names should be labeled "appid: [appid]" not "Unnamed Game"
+- Make Steam links clickable by using markdown format: [Steam Store](https://store.steampowered.com/app/[appid]/)
+
+Always provide specific, data-backed answers with relevant metrics and Steam store links."""
     
     # Check if assistant exists, create if it doesn't
     try:
@@ -152,13 +170,13 @@ Always provide comprehensive answers that take into account the full set of revi
     return assistant
 
 
-def convert_csv_to_json(csv_path: str, json_path: str = None, max_size_mb: float = 350.0) -> list[str]:
+def convert_csv_to_json(csv_path: str, json_path: str = None, max_size_mb: float = 100.0) -> list[str]:
     """Convert a CSV file to JSON format, splitting into multiple files if needed.
     
     Args:
         csv_path: Path to the CSV file
         json_path: Path template for output JSON files (defaults to same directory with .json extension). If file is split, parts will be named: filename_part1.json, filename_part2.json, etc.
-        max_size_mb: Maximum size in MB for each JSON file (default: 350.0)
+        max_size_mb: Maximum size in MB for each JSON file (default: 100.0, the Pinecone max file size)
         
     Returns:
         List of paths to created JSON files
@@ -192,46 +210,55 @@ def convert_csv_to_json(csv_path: str, json_path: str = None, max_size_mb: float
     
     records = [clean_record(r) for r in records]
     
-    # Estimate size per record by converting a sample
+    # Estimate size per record
     max_size_bytes = max_size_mb * 1024 * 1024
     if len(records) > 0:
-        # Sample first record to estimate size
         sample_json = json.dumps([records[0]], ensure_ascii=False)
         sample_size = len(sample_json.encode('utf-8'))
-        # Use 90% of max size to leave margin for JSON overhead
-        records_per_file = max(1, int((max_size_bytes * 0.9) / sample_size))
+        records_per_file = max(1, int((max_size_bytes * 0.95) / sample_size))
     else:
         records_per_file = len(records)
     
     json_files = []
     total_records = len(records)
+    current_idx = 0
+    part_num = 1
+    base_name = json_path.stem
+    base_dir = json_path.parent
     
-    # Split records into chunks and write JSON files
-    if total_records <= records_per_file:
-        # Single file - no splitting needed
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(records, f, ensure_ascii=False)
-        json_files.append(str(json_path))
-        print(f"Converted {total_records} rows from {csv_file.name} to {json_path.name}")
-    else:
-        # Split into multiple files
-        num_parts = (total_records + records_per_file - 1) // records_per_file
-        base_name = json_path.stem
-        base_dir = json_path.parent
+    while current_idx < total_records:
+        # Determine chunk size and create filename
+        chunk_size = min(records_per_file, total_records - current_idx)
+        chunk_records = records[current_idx:current_idx + chunk_size]
         
-        for part_num in range(num_parts):
-            start_idx = part_num * records_per_file
-            end_idx = min(start_idx + records_per_file, total_records)
-            chunk_records = records[start_idx:end_idx]
-            
-            # Create filename: original_name_part1.json, original_name_part2.json, etc.
-            part_filename = base_dir / f"{base_name}_part{part_num + 1}.json"
-            
+        if total_records <= records_per_file:
+            part_filename = json_path
+        else:
+            part_filename = base_dir / f"{base_name}_part{part_num}.json"
+        
+        # Write chunk and check size, reducing if needed
+        current_chunk_size = len(chunk_records)
+        while current_chunk_size > 0:
             with open(part_filename, 'w', encoding='utf-8') as f:
-                json.dump(chunk_records, f, ensure_ascii=False)
+                json.dump(chunk_records[:current_chunk_size], f, ensure_ascii=False)
             
-            json_files.append(str(part_filename))
-            print(f"Converted {len(chunk_records)} rows (part {part_num + 1}/{num_parts}) from {csv_file.name} to {part_filename.name}")
+            if part_filename.stat().st_size <= max_size_bytes:
+                break
+            
+            # File too large, reduce chunk size
+            if part_filename.exists():
+                part_filename.unlink()
+            current_chunk_size = int(current_chunk_size * 0.9)
+            if current_chunk_size < 1:
+                current_chunk_size = 1
+        
+        json_files.append(str(part_filename))
+        print(f"Converted {current_chunk_size} rows" + 
+              (f" (part {part_num})" if total_records > records_per_file else "") + 
+              f" from {csv_file.name} to {part_filename.name}")
+        
+        current_idx += current_chunk_size
+        part_num += 1
     
     return json_files
 
