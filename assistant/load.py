@@ -24,8 +24,7 @@ def upload_files(assistant):
     applications_files = sorted(data_dir.glob("applications*.json"))
     reviews_files = sorted(data_dir.glob("reviews*.json"))
     
-    #all_files = list(applications_files) + list(reviews_files)
-    all_files =  list(reviews_files)
+    all_files = list(applications_files) + list(reviews_files)
     
     if not all_files:
         print("No JSON files found to upload")
