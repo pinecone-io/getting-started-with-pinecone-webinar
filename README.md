@@ -23,13 +23,32 @@ Copy the API key from `example.env` into your `.env` file and you can start quer
 
 ### Getting your environment ready
   1. Clone this repo: `https://github.com/pinecone-io/getting-started-with-pinecone-webinar.git`
-  2. Get the data
+  2. Create a Python virtual environment: 
+     - On macOS/Linux: `python3 -m venv .venv`
+     - On Windows: `python -m venv .venv` (or `python3` if available)
+  3. Activate the virtual environment: 
+     - On macOS/Linux: `source .venv/bin/activate`
+     - On Windows: `.\venv\Scripts\activate`
+  4. Install Python requirements: `pip install -r requirements.txt`
+  
+  **Note:** On macOS/Linux, use `python3` and `pip3` before creating the virtual environment. After activating the virtual environment, you can use `python` and `pip` (they will point to the virtual environment versions).
+  5. Get the data (choose one method):
+     
+     **Option A: Automated download (recommended)**
+     1. Set up Kaggle API credentials:
+        - Go to [https://www.kaggle.com/settings](https://www.kaggle.com/settings)
+        - Scroll to 'API' section and click 'Create New Token'
+        - Download the `kaggle.json` file
+        - Place it at `~/.kaggle/kaggle.json` (or set `KAGGLE_USERNAME` and `KAGGLE_KEY` environment variables)
+     2. Run the download command:
+        ```bash
+        python3 pc-webinar.py data-download
+        ```
+     
+     **Option B: Manual download**
      1. Download the CSV dataset from Kaggle at: [https://www.kaggle.com/datasets/crainbramp/steam-dataset-2025-multi-modal-gaming-analytics?resource=download-directory&select=steam_dataset_2025_csv_package_v1](https://www.kaggle.com/datasets/crainbramp/steam-dataset-2025-multi-modal-gaming-analytics?resource=download-directory&select=steam_dataset_2025_csv_package_v1)
      2. Unzip the download (should unzip into a folder named `steam_dataset_2025_csv`)
-     3. Copy the `steam_dataset_2025_csv` folder to the data folder in the root of this repo
-  3. Create a Python virtual environment: `python -m venv .venv`
-  4. Activate the virtual environment: `source .venv/bin/activate` (or `.\venv\Scripts\activate` on Windows)
-  5. Install Python requirements: `pip install -r requirements.txt`
+     3. Copy the `steam_dataset_2025_csv` folder to the `data` folder in the root of this repo
   6. Copy `example.env` to `.env`: `cp example.env .env`
   7. Edit `.env` and add your Pinecone API key
 
@@ -39,7 +58,7 @@ Copy the API key from `example.env` into your `.env` file and you can start quer
 Load Steam game applications and reviews into Pinecone indexes:
 
 ```bash
-python pc-webinar.py database-load
+python3 pc-webinar.py database-load
 ```
 
 This command will:
@@ -65,19 +84,19 @@ Query the Pinecone database using hybrid, semantic, or lexical search:
 
 ```bash
 # Hybrid search (default) - queries both dense and sparse indexes, then reranks results
-python pc-webinar.py database-query "action games with good graphics"
+python3 pc-webinar.py database-query "action games with good graphics"
 
 # Semantic search - uses only the dense index for semantic similarity
-python pc-webinar.py database-query "action games with good graphics" --mode semantic
+python3 pc-webinar.py database-query "action games with good graphics" --mode semantic
 
 # Lexical search - uses only the sparse index for keyword matching
-python pc-webinar.py database-query "action games with good graphics" --mode lexical
+python3 pc-webinar.py database-query "action games with good graphics" --mode lexical
 
 # Specify number of results to return
-python pc-webinar.py database-query "strategy games" --top-k 20
+python3 pc-webinar.py database-query "strategy games" --top-k 20
 
 # Combine options
-python pc-webinar.py database-query "indie puzzle games" -m semantic -t 5
+python3 pc-webinar.py database-query "indie puzzle games" -m semantic -t 5
 ```
 
 **Search Modes:**
@@ -96,7 +115,7 @@ python pc-webinar.py database-query "indie puzzle games" -m semantic -t 5
 Load Steam game applications and reviews into the Pinecone Assistant:
 
 ```bash
-python pc-webinar.py assistant-load
+python3 pc-webinar.py assistant-load
 ```
 
 This command will:
@@ -118,13 +137,13 @@ Chat with the Pinecone Assistant using the uploaded Steam game data:
 
 ```bash
 # Use default model (gpt-4o)
-python pc-webinar.py assistant-prompt "What are the most popular Steam games?"
+python3 pc-webinar.py assistant-prompt "What are the most popular Steam games?"
 
 # Specify a different model using short flag
-python pc-webinar.py assistant-prompt "Tell me about Counter-Strike's review sentiment" -m claude-3-5-sonnet
+python3 pc-webinar.py assistant-prompt "Tell me about Counter-Strike's review sentiment" -m claude-3-5-sonnet
 
 # Using the full --model flag
-python pc-webinar.py assistant-prompt "What games have the best reviews?" --model gemini-2.5-pro
+python3 pc-webinar.py assistant-prompt "What games have the best reviews?" --model gemini-2.5-pro
 ```
 
 **Arguments:**
@@ -166,6 +185,7 @@ We are using 2 CSV files from the [Steam Dataset 2025: Multi-Modal Gaming Analyt
 
 | Command | Description | Arguments |
 |---------|-------------|-----------|
+| `data-download` | Download Steam dataset from Kaggle | None |
 | `database-load` | Load Steam data into Pinecone indexes | None |
 | `database-query` | Query Pinecone indexes | `query` (required), `-m/--mode` (optional), `-t/--top-k` (optional) |
 | `assistant-load` | Load Steam data into Pinecone Assistant | None |
