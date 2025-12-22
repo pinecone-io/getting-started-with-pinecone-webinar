@@ -153,6 +153,7 @@ python3 pc-webinar.py assistant-prompt "What games have the best reviews?" --mod
 **Available Models:**
 - `gpt-4o` (default)
 - `gpt-4.1`
+- `gpt-5`
 - `o4-mini`
 - `claude-3-5-sonnet`
 - `claude-3-7-sonnet`
