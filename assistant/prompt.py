@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument('prompt', help='Prompt for the assistant')
     parser.add_argument(
         '-m', '--model',
-        choices=['gpt-4o', 'gpt-4.1', 'o4-mini', 'claude-3-5-sonnet', 'claude-3-7-sonnet', 'gemini-2.5-pro'],
+        choices=['gpt-4o', 'gpt-4.1', 'gpt-5', 'o4-mini', 'claude-3-5-sonnet', 'claude-3-7-sonnet', 'gemini-2.5-pro'],
         default='gpt-4o',
         help='Model to use for the assistant (default: gpt-4o)'
     )
