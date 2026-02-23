@@ -10,7 +10,7 @@ Repository with example code and data used in the monthly Getting Started with P
 **Want to try it out without setting up your own environment?**
 
 You can use the shared API key provided in `example.env` to access the pre-loaded database indexes and assistant:
-- **API Key**: `pcsk_2go2xm_EAXpMTvVHud6PP3od6iCB5NsCY3PC9smXUQktmh2eVaoDbAhCjqp7Fw5Yqitjqr`
+- **API Key**: `pcsk_58NyGR_EWCKwSjddafXp1sEhuutJRHdpnxxUWwce9mLxex46AgHtzzFK4wQbJ3FSxx3o3F`
 - This API key provides read-only access to:
   - Both database indexes (`getting-started-webinar-dense` and `getting-started-webinar-sparse`) with pre-loaded Steam game data
   - The Pinecone Assistant (`getting-started-webinar-assistant`) with uploaded Steam game data
