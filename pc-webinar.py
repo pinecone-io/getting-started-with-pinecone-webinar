@@ -12,6 +12,7 @@ from assistant import load as assistant_load
 from assistant import prompt as assistant_prompt
 from database import load as database_load
 from database import query as database_query
+# Lazy import for data_download to avoid kaggle authentication on import
 
 
 def main():
@@ -22,6 +23,12 @@ def main():
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Data download command
+    data_download_parser = subparsers.add_parser(
+        'data-download',
+        help='Download the Steam dataset from Kaggle'
+    )
     
     # Database commands
     db_load_parser = subparsers.add_parser(
@@ -66,7 +73,7 @@ def main():
     )
     asst_prompt_parser.add_argument(
         '-m', '--model',
-        choices=['gpt-4o', 'gpt-4.1', 'o4-mini', 'claude-3-5-sonnet', 'claude-3-7-sonnet', 'gemini-2.5-pro'],
+        choices=['gpt-4o', 'gpt-4.1', 'gpt-5', 'o4-mini', 'claude-3-5-sonnet', 'claude-3-7-sonnet', 'gemini-2.5-pro'],
         default='gpt-4o',
         help='Model to use for the assistant (default: gpt-4o)'
     )
@@ -78,7 +85,12 @@ def main():
         sys.exit(1)
     
     # Route to appropriate command handler
-    if args.command == 'database-load':
+    if args.command == 'data-download':
+        # Lazy import to avoid kaggle authentication when not needed
+        from data import download as data_download
+        exit_code = data_download.main()
+        sys.exit(exit_code)
+    elif args.command == 'database-load':
         database_load.main()
     elif args.command == 'database-query':
         database_query.main(args.query, args.mode, args.top_k)
