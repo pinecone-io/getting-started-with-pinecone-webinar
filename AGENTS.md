@@ -55,11 +55,11 @@ from pinecone import Pinecone  # ✅ Correct import
 **macOS (Homebrew):**
 
 ```bash  theme={null}
-brew tap pinecone-io/tap
-brew install pinecone-io/tap/pinecone
+# If installed before 2026-03-30 (old formula), first: brew uninstall pinecone-io/tap/pinecone
+brew install --cask pinecone-io/tap/pinecone
 
 # Upgrade later
-brew update && brew upgrade pinecone
+brew upgrade --cask pinecone-io/tap/pinecone
 ```
 
 **Other platforms:**
@@ -116,7 +116,7 @@ Based on the choice, use the appropriate pattern.
 Before starting any quickstart, complete these steps:
 
 1. **Set up Python environment**: Create project directory, virtual environment, and install Pinecone SDK
-2. **Install CLI**: Run `pc version` to check. If not installed: `brew tap pinecone-io/tap && brew install pinecone-io/tap/pinecone` (macOS) or download from [GitHub releases](https://github.com/pinecone-io/cli/releases). If already installed, upgrade: `brew update && brew upgrade pinecone`
+2. **Install CLI**: Run `pc version` to check. If not installed: `brew install --cask pinecone-io/tap/pinecone` (macOS) or download from [GitHub releases](https://github.com/pinecone-io/cli/releases). If already installed, upgrade: `brew upgrade --cask pinecone-io/tap/pinecone`
 3. **Configure API key**: Ask user for Pinecone API key, set as `PINECONE_API_KEY` env variable, then run `pc auth configure --api-key $PINECONE_API_KEY`
 4. **For RAG quickstart only**: Also obtain and set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
 
